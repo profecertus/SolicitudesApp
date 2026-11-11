@@ -1,4 +1,5 @@
 using FluentValidation;
+using SolicitudesApp.Application.Auth;
 using SolicitudesApp.Application.DTOs;
 using SolicitudesApp.Application.Interfaces;
 using SolicitudesApp.Application.Roles;
@@ -35,9 +36,24 @@ namespace SolicitudesApp.Application.Usuarios
         public async Task<UsuarioDto> CrearAsync(CrearUsuarioDto dto, CancellationToken ct = default)
         {
             await _crearValidator.ValidateAndThrowAsync(dto, ct);
-            await ValidarCorreoUnicoAsync(dto.Correo, null, ct);
+            var correoNormalizado = dto.Correo.Trim().ToLowerInvariant();
+            var usernameNormalizado = string.IsNullOrWhiteSpace(dto.Username)
+                ? correoNormalizado.Split('@')[0]
+                : dto.Username.Trim().ToLowerInvariant();
 
-            var usuario = new Usuario { Nombre = dto.Nombre.Trim(), Correo = dto.Correo.Trim().ToLowerInvariant(), Activo = true };
+            await ValidarCorreoUnicoAsync(correoNormalizado, null, ct);
+            await ValidarUsernameUnicoAsync(usernameNormalizado, null, ct);
+
+            var passwordPlano = string.IsNullOrWhiteSpace(dto.Password) ? "123456" : dto.Password.Trim();
+
+            var usuario = new Usuario
+            {
+                Username = usernameNormalizado,
+                Nombre = dto.Nombre.Trim(),
+                Correo = correoNormalizado,
+                PasswordHash = PasswordHasher.Hash(passwordPlano),
+                Activo = true
+            };
             foreach (var rolId in (dto.RolIds ?? []).Distinct())
             {
                 var rol = await _uow.Roles.GetByIdAsync(rolId, ct)
@@ -55,10 +71,23 @@ namespace SolicitudesApp.Application.Usuarios
             await _actualizarValidator.ValidateAndThrowAsync(dto, ct);
             var usuario = await _uow.Usuarios.GetByIdAsync(id, ct)
                 ?? throw new KeyNotFoundException($"No se encontró el usuario con Id {id}");
-            await ValidarCorreoUnicoAsync(dto.Correo, id, ct);
+            var correoNormalizado = dto.Correo.Trim().ToLowerInvariant();
+            await ValidarCorreoUnicoAsync(correoNormalizado, id, ct);
+
+            if (!string.IsNullOrWhiteSpace(dto.Username))
+            {
+                var usernameNormalizado = dto.Username.Trim().ToLowerInvariant();
+                await ValidarUsernameUnicoAsync(usernameNormalizado, id, ct);
+                usuario.Username = usernameNormalizado;
+            }
+
+            if (!string.IsNullOrWhiteSpace(dto.Password))
+            {
+                usuario.PasswordHash = PasswordHasher.Hash(dto.Password.Trim());
+            }
 
             usuario.Nombre = dto.Nombre.Trim();
-            usuario.Correo = dto.Correo.Trim().ToLowerInvariant();
+            usuario.Correo = correoNormalizado;
             usuario.Activo = dto.Activo;
             await _uow.Usuarios.UpdateAsync(usuario, ct);
             await _uow.SaveChangesAsync(ct);
@@ -115,8 +144,15 @@ namespace SolicitudesApp.Application.Usuarios
                 throw new ReglaDominioException($"Ya existe un usuario con el correo {normalizado}");
         }
 
+        private async Task ValidarUsernameUnicoAsync(string username, int? idActual, CancellationToken ct)
+        {
+            var normalizado = username.Trim().ToLowerInvariant();
+            if (await _uow.Usuarios.AnyAsync(u => u.Username == normalizado && u.Id != (idActual ?? 0), ct))
+                throw new ReglaDominioException($"Ya existe un usuario con el username {normalizado}");
+        }
+
         private static UsuarioDto MapearADto(Usuario u) => new(
-            u.Id, u.Nombre, u.Correo, u.Activo, u.FechaCreacion,
+            u.Id, u.Username, u.Nombre, u.Correo, u.Activo, u.FechaCreacion,
             u.Roles.OrderBy(r => r.Id).Select(RolService.MapearADto).ToList());
     }
 }

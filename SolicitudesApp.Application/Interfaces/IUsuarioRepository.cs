@@ -6,5 +6,6 @@ namespace SolicitudesApp.Application.Interfaces
     {
         Task<Usuario?> GetByIdConRolesAsync(int id, CancellationToken ct = default);
         Task<IReadOnlyList<Usuario>> ListarConRolesAsync(CancellationToken ct = default);
+        Task<Usuario?> ObtenerPorUsuarioOCorreoAsync(string usuarioOCorreo, CancellationToken ct = default);
     }
 }

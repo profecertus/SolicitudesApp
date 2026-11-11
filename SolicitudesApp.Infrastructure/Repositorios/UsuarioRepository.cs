@@ -14,5 +14,16 @@ namespace SolicitudesApp.Infrastructure.Repositorios
 
         public async Task<IReadOnlyList<Usuario>> ListarConRolesAsync(CancellationToken ct = default) =>
             await _dbSet.Include(u => u.Roles).AsNoTracking().OrderBy(u => u.Id).ToListAsync(ct);
+
+        public async Task<Usuario?> ObtenerPorUsuarioOCorreoAsync(string usuarioOCorreo, CancellationToken ct = default)
+        {
+            var valor = usuarioOCorreo.Trim().ToLowerInvariant();
+            return await _dbSet
+                .Include(u => u.Roles)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u =>
+                    u.Username.ToLower() == valor ||
+                    u.Correo.ToLower() == valor, ct);
+        }
     }
 }

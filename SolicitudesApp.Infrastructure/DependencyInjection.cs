@@ -1,6 +1,7 @@
-﻿using SolicitudesApp.Application.Services;
+using SolicitudesApp.Application.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using SolicitudesApp.Application.Auth;
 using SolicitudesApp.Application.Interfaces;
 using SolicitudesApp.Application.Solicitudes;
 using SolicitudesApp.Application.Aprobaciones;
@@ -30,6 +31,8 @@ namespace SolicitudesApp.Infrastructure
             services.AddScoped<IUsuarioService, UsuarioService>();
             services.AddScoped<IAprobacionService, AprobacionService>();
             services.AddScoped<IMovimientoTesoreriaService, MovimientoTesoreriaService>();
+            services.AddScoped<IJwtService, JwtService>();
+            services.AddScoped<IAuthService, AuthService>();
             return services;
         }
     }

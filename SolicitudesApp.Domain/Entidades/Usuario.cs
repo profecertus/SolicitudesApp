@@ -3,6 +3,7 @@ namespace SolicitudesApp.Domain.Entidades;
 public class Usuario : EntidadAuditable
 {
     public int Id { get; set; }
+    public string Username { get; set; } = "";
     public string Nombre { get; set; } = "";
     public string Correo { get; set; } = "";
     public string PasswordHash { get; set; } = "";

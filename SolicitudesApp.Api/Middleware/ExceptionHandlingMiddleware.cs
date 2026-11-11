@@ -1,8 +1,7 @@
-﻿using System.Net;
+using System.Net;
 using System.Text.Json;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using SolicitudesApp.Domain.Excepciones;
 
 namespace SolicitudesApp.Api.Middleware
@@ -24,12 +23,14 @@ namespace SolicitudesApp.Api.Middleware
             {
                 await _next(context);
             }
-            catch (Exception ex) { 
+            catch (Exception ex)
+            {
                 await HandleExceptionAsync(context, ex);
             }
         }
 
-        private async Task HandleExceptionAsync(HttpContext context, Exception ex) {
+        private async Task HandleExceptionAsync(HttpContext context, Exception ex)
+        {
             _logger.LogError(ex, "Ocurrió una excepcion no controlada: {Message}", ex.Message);
 
             var (statusCode, problemDetails) = ex switch
@@ -41,6 +42,16 @@ namespace SolicitudesApp.Api.Middleware
                             .GroupBy(e => e.PropertyName)
                             .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray())
                         )
+                ),
+                UnauthorizedAccessException unauthEx => (
+                    HttpStatusCode.Unauthorized,
+                    new ProblemDetails
+                    {
+                        Title = "Acceso no autorizado",
+                        Status = (int)HttpStatusCode.Unauthorized,
+                        Detail = unauthEx.Message,
+                        Instance = context.Request.Path
+                    }
                 ),
                 ReglaDominioException domEx => (
                     HttpStatusCode.UnprocessableEntity,
@@ -74,16 +85,16 @@ namespace SolicitudesApp.Api.Middleware
                 )
             };
 
-            context.Response.ContentType ="application/problem+json";
+            context.Response.ContentType = "application/problem+json";
             context.Response.StatusCode = (int)statusCode;
 
-            var json = JsonSerializer.Serialize((object)problemDetails, new JsonSerializerOptions { 
+            var json = JsonSerializer.Serialize((object)problemDetails, new JsonSerializerOptions
+            {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
                 WriteIndented = true
             });
 
             await context.Response.WriteAsync(json);
         }
-
     }
 }

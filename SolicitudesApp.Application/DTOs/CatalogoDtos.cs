@@ -12,9 +12,9 @@ namespace SolicitudesApp.Application.DTOs
     public record GuardarRolDto(string Nombre, decimal LimiteAprobacion);
 
     // Usuarios (el PasswordHash nunca se expone)
-    public record UsuarioDto(int Id, string Nombre, string Correo, bool Activo, DateTime FechaCreacion, List<RolDto> Roles);
-    public record CrearUsuarioDto(string Nombre, string Correo, List<int>? RolIds);
-    public record ActualizarUsuarioDto(string Nombre, string Correo, bool Activo);
+    public record UsuarioDto(int Id, string Username, string Nombre, string Correo, bool Activo, DateTime FechaCreacion, List<RolDto> Roles);
+    public record CrearUsuarioDto(string Nombre, string Correo, List<int>? RolIds, string? Username = null, string? Password = null);
+    public record ActualizarUsuarioDto(string Nombre, string Correo, bool Activo, string? Username = null, string? Password = null);
 
     // Detalles de una solicitud (el DTO de lectura es SolicitudDetalleDto)
     public record GuardarDetalleDto(string Concepto, int Cantidad, decimal PrecioUnitario);
